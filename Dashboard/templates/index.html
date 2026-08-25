@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Analytics Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation (Left Corner Controls) -->
+        <aside class="sidebar">
+            <div>
+                <div class="sidebar-header">
+                    <div class="logo-badge">HR</div>
+                    <div class="header-title">
+                        <h1>HR Analytics</h1>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <div class="nav-section-title">Navigation Views</div>
+                    
+                    <!-- 1. Overview Button -->
+                    <button class="nav-btn active" id="btn-overview" onclick="switchTab('overview')">
+                        <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+                        <span>Overview</span>
+                    </button>
+
+                    <!-- 2. Retention & Action Button -->
+                    <button class="nav-btn" id="btn-retention" onclick="switchTab('retention')">
+                        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span>Retention & Action</span>
+                    </button>
+
+                    <!-- 3. Dynamic Chart Explorer Button -->
+                    <button class="nav-btn" id="btn-explorer" onclick="switchTab('explorer')">
+                        <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                        <span>Dynamic Explorer</span>
+                    </button>
+
+                    <!-- 4. Prediction Button (directly below Dynamic Explorer) -->
+                    <button class="nav-btn" id="btn-prediction" onclick="switchTab('prediction')">
+                        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        <span>Prediction</span>
+                    </button>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Header Bar -->
+            <header class="topbar">
+                <div class="topbar-title-area">
+                    <h2 class="topbar-title" id="current-view-title">Overview Dashboard</h2>
+                </div>
+                <div class="topbar-actions">
+                    <!-- Global Active Filter Pill -->
+                    <div id="active-filter-badge" class="stat-pill" style="display: none; background-color: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: var(--accent-blue);">
+                        <span>Filtered by <strong id="filter-text">None</strong></span>
+                        <button onclick="resetGlobalFilter()" style="background:none; border:none; color: var(--accent-rose); font-weight:bold; cursor:pointer; margin-left:8px;" title="Reset Filter">&times; Reset</button>
+                    </div>
+                </div>
+            </header>
+
+
+            <div class="content-body">
+                <!-- TAB 1: OVERVIEW VIEW -->
+                <section class="tab-view active" id="view-overview">
+                    <!-- Overview Filter Control Bar -->
+                    <div class="explorer-panel" style="padding: 16px 20px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <span class="nav-section-title" style="padding-left: 0; color: var(--accent-blue);">Overview Filters</span>
+                            <button class="btn-generate" style="height: 32px; padding: 4px 12px; font-size: 0.78rem;" onclick="resetOverviewFilters()">Reset Filters</button>
+                        </div>
+                        <div class="controls-grid" style="margin-bottom: 0;">
+                            <div class="control-group">
+                                <label for="ov-filter-dept">Department</label>
+                                <select id="ov-filter-dept" class="custom-select" onchange="onOverviewFilterChange()">
+                                    <option value="All" selected>All Departments</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="ov-filter-gender">Gender</label>
+                                <select id="ov-filter-gender" class="custom-select" onchange="onOverviewFilterChange()">
+                                    <option value="All" selected>All Genders</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="ov-filter-overtime">OverTime</label>
+                                <select id="ov-filter-overtime" class="custom-select" onchange="onOverviewFilterChange()">
+                                    <option value="All" selected>All OverTime</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="ov-filter-role">Job Role</label>
+                                <select id="ov-filter-role" class="custom-select" onchange="onOverviewFilterChange()">
+                                    <option value="All" selected>All Roles</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="ov-filter-hireyear">Hire Year</label>
+                                <select id="ov-filter-hireyear" class="custom-select" onchange="onOverviewFilterChange()">
+                                    <option value="All" selected>All Hire Years</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top KPIs -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card accent">
+                            <span class="kpi-label">Total Workforce</span>
+                            <span class="kpi-value" id="kpi-total-emp">10,000</span>
+                            <span class="kpi-subtext">Active & Resigned Employees</span>
+                        </div>
+                        <div class="kpi-card danger">
+                            <span class="kpi-label">Attrition Rate</span>
+                            <span class="kpi-value" id="kpi-attrition-rate">0.0%</span>
+                            <span class="kpi-subtext" id="kpi-resigned-count">0 Total Resigned</span>
+                        </div>
+                        <div class="kpi-card success">
+                            <span class="kpi-label">Avg Monthly Income</span>
+                            <span class="kpi-value" id="kpi-avg-income">$0</span>
+                            <span class="kpi-subtext">Across All Roles</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">Avg Job Satisfaction</span>
+                            <span class="kpi-value" id="kpi-avg-satisfaction">0.0 / 4</span>
+                            <span class="kpi-subtext">Employee Feedback Rating</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">Avg Work-Life Balance</span>
+                            <span class="kpi-value" id="kpi-avg-worklife">0.0 / 4</span>
+                            <span class="kpi-subtext">Work Life Rating</span>
+                        </div>
+                    </div>
+
+                    <!-- Hire Year Line Chart (New) -->
+                    <div class="chart-card" style="margin-bottom: 20px;">
+                        <div class="chart-header">
+                            <div>
+                                <div class="chart-title">Hire Year vs Attrition Trend</div>
+                                <div class="chart-subtitle">Hire Year vs Attrition Trend</div>
+                            </div>
+                            <span class="badge badge-action">Line Chart</span>
+                        </div>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="chart-hireyear-attrition"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Overview Charts Grid -->
+                    <div class="chart-grid-2">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <div>
+                                    <div class="chart-title">Attrition Rate by Department</div>
+                                    <div class="chart-subtitle">Attrition Rate by Department</div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-dept-attrition"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <div>
+                                    <div class="chart-title">Average Monthly Income by Department</div>
+                                    <div class="chart-subtitle">Average Monthly Income by Department</div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-dept-income"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-grid-3">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <div>
+                                    <div class="chart-title">Attrition by Gender</div>
+                                    <div class="chart-subtitle">Attrition by Gender</div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-gender-attrition"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <div>
+                                    <div class="chart-title">Impact of Overtime on Attrition</div>
+                                    <div class="chart-subtitle">Impact of Overtime on Attrition</div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-overtime-attrition"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <div>
+                                    <div class="chart-title">Highest Attrition Job Roles</div>
+                                    <div class="chart-subtitle">Highest Attrition Job Roles</div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-roles-attrition"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- TAB 2: RETENTION & ACTION VIEW -->
+                <section class="tab-view" id="view-retention">
+                    <!-- Retention Filter Control Bar -->
+                    <div class="explorer-panel" style="padding: 16px 20px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <span class="nav-section-title" style="padding-left: 0; color: var(--accent-rose);">Retention Filters</span>
+                            <button class="btn-generate" style="height: 32px; padding: 4px 12px; font-size: 0.78rem;" onclick="resetRetentionFilters()">Reset Filters</button>
+                        </div>
+                        <div class="controls-grid" style="margin-bottom: 0;">
+                            <div class="control-group">
+                                <label for="ret-filter-dept">Department</label>
+                                <select id="ret-filter-dept" class="custom-select" onchange="onRetentionFilterChange()">
+                                    <option value="All" selected>All Departments</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="ret-filter-reason">Reason Category</label>
+                                <select id="ret-filter-reason" class="custom-select" onchange="onRetentionFilterChange()">
+                                    <option value="All" selected>All Reasons</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="ret-filter-attempt">Attempted?</label>
+                                <select id="ret-filter-attempt" class="custom-select" onchange="onRetentionFilterChange()">
+                                    <option value="All" selected>All Attempts</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="ret-filter-action">Action Taken</label>
+                                <select id="ret-filter-action" class="custom-select" onchange="onRetentionFilterChange()">
+                                    <option value="All" selected>All Actions</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="ret-filter-retained">Retained Outcome</label>
+                                <select id="ret-filter-retained" class="custom-select" onchange="onRetentionFilterChange()">
+                                    <option value="All" selected>All Outcomes</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Retention KPIs -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card danger">
+                            <span class="kpi-label">Total Resignations</span>
+                            <span class="kpi-value" id="ret-kpi-total">0</span>
+                            <span class="kpi-subtext">Recorded Exit Requests</span>
+                        </div>
+                        <div class="kpi-card accent">
+                            <span class="kpi-label">Retention Attempt Rate</span>
+                            <span class="kpi-value" id="ret-kpi-attempt-rate">0.0%</span>
+                            <span class="kpi-subtext" id="ret-kpi-attempt-count">0 Attempts Made</span>
+                        </div>
+                        <div class="kpi-card success">
+                            <span class="kpi-label">Retention Success Rate</span>
+                            <span class="kpi-value" id="ret-kpi-success-rate">0.0%</span>
+                            <span class="kpi-subtext" id="ret-kpi-retained-count">0 Employees Retained</span>
+                        </div>
+                    </div>
+
+                    <div class="chart-grid-2">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <div>
+                                    <div class="chart-title">Primary Exit Reason Categories</div>
+                                    <div class="chart-subtitle">Primary Exit Reason Categories</div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-reason-categories"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <div>
+                                    <div class="chart-title">Retention Action Taken Effectiveness</div>
+                                    <div class="chart-subtitle">Retention Action Taken Effectiveness</div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-action-effectiveness"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- TAB 3: DYNAMIC EXPLORER VIEW -->
+                <section class="tab-view" id="view-explorer">
+                    <!-- Dynamic Explorer Filter Control Bar (Matching Overview/Retention Design) -->
+                    <div class="explorer-panel" style="padding: 16px 20px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <span class="nav-section-title" style="padding-left: 0; color: var(--accent-purple);">Dynamic Explorer Controls</span>
+                            <button class="btn-generate" style="height: 32px; padding: 4px 12px; font-size: 0.78rem;" onclick="generateCustomChart()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                <span>Update Chart</span>
+                            </button>
+                        </div>
+
+                        <!-- Dropdowns and Controls Grid -->
+                        <div class="controls-grid" style="margin-bottom: 0;">
+                            <!-- Dropdown 1: Select Graph / Chart Type -->
+                            <div class="control-group">
+                                <label for="select-chart-type">Chart Type</label>
+                                <select id="select-chart-type" class="custom-select" onchange="onChartTypeChange()">
+                                    <option value="bar" selected>Bar Chart (Vertical)</option>
+                                    <option value="horizontalBar">Horizontal Bar Chart</option>
+                                    <option value="line">Line Chart / Trend</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                    <option value="polarArea">Polar Area Chart</option>
+                                    <option value="radar">Radar Chart</option>
+                                </select>
+                            </div>
+
+                            <!-- Dropdown 2: Select X-Axis Column -->
+                            <div class="control-group">
+                                <label for="select-x-axis">X-Axis Column</label>
+                                <select id="select-x-axis" class="custom-select" onchange="generateCustomChart()">
+                                    <!-- Populated dynamically via API -->
+                                </select>
+                            </div>
+
+                            <!-- Dropdown 3: Select Y-Axis Column / Metric -->
+                            <div class="control-group">
+                                <label for="select-y-axis">Y-Axis Metric</label>
+                                <select id="select-y-axis" class="custom-select" onchange="generateCustomChart()">
+                                    <option value="__COUNT__">Count of Employees</option>
+                                    <option value="__ATTRITION_RATE__">Attrition Rate (%)</option>
+                                    <option value="MonthlyIncome" selected>Monthly Income</option>
+                                    <option value="Age">Age</option>
+                                    <option value="DistanceFromHome_KM">Distance From Home (KM)</option>
+                                    <option value="PercentSalaryHike">Percent Salary Hike</option>
+                                    <option value="TotalWorkingYears">Total Working Years</option>
+                                    <option value="YearsAtCompany">Years At Company</option>
+                                    <option value="YearsInCurrentRole">Years In Current Role</option>
+                                    <option value="YearsSinceLastPromotion">Years Since Last Promotion</option>
+                                    <option value="JobSatisfaction">Job Satisfaction Rating</option>
+                                    <option value="WorkLifeBalance">Work-Life Balance Rating</option>
+                                    <option value="EnvironmentSatisfaction">Environment Satisfaction</option>
+                                    <option value="PerformanceRating">Performance Rating</option>
+                                </select>
+                            </div>
+
+                            <!-- Dropdown 4: Aggregation Function -->
+                            <div class="control-group" id="group-agg-func">
+                                <label for="select-agg-func">Aggregation Mode</label>
+                                <select id="select-agg-func" class="custom-select" onchange="generateCustomChart()">
+                                    <option value="mean" selected>Average (Mean)</option>
+                                    <option value="sum">Sum</option>
+                                    <option value="median">Median</option>
+                                    <option value="max">Maximum</option>
+                                    <option value="min">Minimum</option>
+                                </select>
+                            </div>
+
+                            <!-- Filter: Department -->
+                            <div class="control-group">
+                                <label for="filter-dept">Department Filter</label>
+                                <select id="filter-dept" class="custom-select" onchange="generateCustomChart()">
+                                    <option value="All" selected>All Departments</option>
+                                    <option value="R&D">R&D</option>
+                                    <option value="Sales">Sales</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="IT">IT</option>
+                                    <option value="Human Resources">Human Resources</option>
+                                </select>
+                            </div>
+
+                            <!-- Filter: Attrition Status -->
+                            <div class="control-group">
+                                <label for="filter-attrition">Attrition Filter</label>
+                                <select id="filter-attrition" class="custom-select" onchange="generateCustomChart()">
+                                    <option value="All" selected>All Employees</option>
+                                    <option value="Yes">Resigned Only (Attrition=Yes)</option>
+                                    <option value="No">Active Only (Attrition=No)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Generated Chart Card -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div>
+                                <div class="chart-title" id="custom-chart-title">Dynamic Visualization</div>
+                                <div class="chart-subtitle" id="custom-chart-subtitle">Dynamic Visualization</div>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="height: 380px;">
+                            <canvas id="canvas-custom-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats KPI Grid -->
+                    <div class="kpi-grid" style="margin-top: 20px;" id="custom-stats-grid">
+                        <div class="kpi-card">
+                            <span class="kpi-label">Categories Count</span>
+                            <span class="kpi-value" id="custom-stat-cat">0</span>
+                        </div>
+                        <div class="kpi-card accent">
+                            <span class="kpi-label">Average Value</span>
+                            <span class="kpi-value" id="custom-stat-avg">0</span>
+                        </div>
+                        <div class="kpi-card success">
+                            <span class="kpi-label">Maximum Value</span>
+                            <span class="kpi-value" id="custom-stat-max">0</span>
+                        </div>
+                        <div class="kpi-card danger">
+                            <span class="kpi-label">Minimum Value</span>
+                            <span class="kpi-value" id="custom-stat-min">0</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 4: PREDICTION VIEW (EXACT LIGHT THEME MATCH OF SCREENSHOT) -->
+                <section class="tab-view" id="view-prediction">
+                    <!-- Top Header Banner -->
+                    <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6, #a855f7); display: flex; align-items: center; justify-content: center; color: #ffffff; flex-shrink: 0; box-shadow: 0 4px 10px rgba(168, 85, 247, 0.25);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        </div>
+                        <div>
+                            <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin: 0;">HR Retention Action Predictor</h2>
+                        </div>
+                    </div>
+
+                    <!-- Main 2-Column Prediction Grid -->
+                    <div class="chart-grid-2" style="grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch;">
+                        <!-- Left Column: Input Form & Sample Presets -->
+                        <div class="chart-card" style="padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 6px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Employee Exit / Feedback Analysis
+                                </div>
+                                <p style="font-size: 0.83rem; color: var(--text-secondary); margin-bottom: 18px; line-height: 1.4;">
+                                    Enter employee exit reasons, performance review feedback, or HR notes to generate AI-recommended retention actions.
+                                </p>
+
+                                <form id="predictionForm" onsubmit="handlePredictionSubmit(event)">
+                                    <div class="control-group" style="margin-bottom: 16px;">
+                                        <label for="feedbackText" style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px; display: block;">Employee Feedback / Exit Reason Text</label>
+                                        <textarea id="feedbackText" rows="6" class="custom-select" style="width: 100%; height: 150px; padding: 14px; font-size: 0.9rem; border-radius: 10px; border: 1px solid var(--border-color); background: #f8fafc; color: var(--text-primary); resize: vertical; line-height: 1.5;" placeholder="e.g. Employee reported severe burnout due to long working hours and expressed interest in flexible remote work options..." required></textarea>
+                                    </div>
+
+
+
+                                    <!-- Action Buttons -->
+                                    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px;">
+                                        <button type="button" onclick="clearPredictionInput()" style="padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border-color); background: #f1f5f9; color: #475569; font-weight: 600; cursor: pointer; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+                                            Clear
+                                        </button>
+                                        <button type="submit" id="predictBtn" style="padding: 10px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #6366f1, #a855f7); color: #ffffff; font-weight: 600; cursor: pointer; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25); transition: all 0.2s ease;">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                                            Predict Retention Action
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Results & AI Recommendations Container -->
+                        <div class="chart-card" style="padding: 24px; min-height: 380px; display: flex; flex-direction: column; justify-content: center;" id="predResultCard">
+                            <!-- Empty Initial State (Matches Screenshot 2 in Light Mode) -->
+                            <div id="predEmptyState" style="text-align: center; padding: 40px 20px;">
+                                <div style="width: 64px; height: 64px; border-radius: 50%; background: #f1f5f9; color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                                </div>
+                                <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">No Analysis Yet</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.85rem; max-width: 320px; margin: 0 auto; line-height: 1.5;">Enter text on the left to view AI retention recommendations and confidence analytics.</p>
+                            </div>
+
+                            <!-- Loader State -->
+                            <div id="predLoader" style="display: none; text-align: center; padding: 60px 24px;">
+                                <div class="spinner" style="margin: 0 auto 16px auto; width: 40px; height: 40px; border: 3px solid rgba(168, 85, 247, 0.2); border-top-color: #a855f7; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                                <p style="color: var(--text-primary); font-weight: 500; font-size: 0.9rem;">Analyzing NLP Text Features & Model Weights...</p>
+                            </div>
+
+                            <!-- Prediction Results Content (Matches Screenshot 1 in Light Mode) -->
+                            <div id="predResultsContent" style="display: none;">
+                                <!-- Top Box: Recommended Action -->
+                                <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;">
+                                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 10px;">RECOMMENDED ACTION</span>
+                                    <span id="predActionTitle" class="badge" style="background: linear-gradient(135deg, #a855f7, #6366f1); color: #ffffff; font-size: 1.15rem; font-weight: 700; padding: 10px 28px; border-radius: 30px; display: inline-block; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25);">Manager Change</span>
+                                </div>
+
+                                <!-- Middle Box: Model Confidence Score -->
+                                <div style="margin-bottom: 20px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 10px; padding: 16px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">
+                                        <span style="color: var(--text-primary);">Model Confidence Score</span>
+                                        <span id="predConfidenceVal" style="color: #0284c7; font-weight: 700; font-size: 0.95rem;">87.5%</span>
+                                    </div>
+                                    <div style="height: 8px; width: 100%; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                        <div id="predConfidenceBar" style="height: 100%; width: 87.5%; background: linear-gradient(90deg, #3b82f6, #a855f7); border-radius: 4px; transition: width 0.6s ease;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Bottom Strategy Card -->
+                                <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
+                                    <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px;">
+                                        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(168, 85, 247, 0.12); color: #a855f7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                        </div>
+                                        <div>
+                                            <h4 id="predStrategyHeading" style="font-size: 0.98rem; font-weight: 700; color: var(--text-primary); margin: 0 0 4px 0;">Team Transfer & Leadership Alignment</h4>
+                                            <span id="predUrgencyBadge" style="font-size: 0.78rem; font-weight: 700; color: var(--accent-rose);">Urgency Level: High</span>
+                                        </div>
+                                    </div>
+                                    <p id="predStrategyBody" style="font-size: 0.86rem; color: var(--text-secondary); line-height: 1.5; margin: 0;">Initiate an internal transfer to a new reporting manager or department. Conduct confidential 1-on-1 feedback sessions to resolve team dynamic issues.</p>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+
+
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
+
+
