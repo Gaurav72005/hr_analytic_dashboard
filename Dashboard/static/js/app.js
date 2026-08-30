@@ -76,7 +76,7 @@ async function populateAllFilterDropdowns() {
         fillSelect('ov-filter-gender', opts['Gender'], 'All Genders');
         fillSelect('ov-filter-overtime', opts['OverTime'], 'All OverTime');
         fillSelect('ov-filter-role', opts['JobRole'], 'All Roles');
-        fillSelect('ov-filter-hireyear', opts['HireYear'], 'All Hire Years');
+        fillSelect('ov-filter-hireyear', opts['Year'] || opts['HireYear'], 'All Years');
 
         fillSelect('ret-filter-dept', opts['Department'], 'All Departments');
         fillSelect('ret-filter-reason', opts['Reason_Category'], 'All Reasons');
@@ -208,12 +208,12 @@ async function loadOverviewData() {
         document.getElementById('kpi-total-emp').innerText = data.kpis.total_employees.toLocaleString();
         document.getElementById('kpi-attrition-rate').innerText = `${data.kpis.attrition_rate}%`;
         document.getElementById('kpi-resigned-count').innerText = `${data.kpis.total_resigned.toLocaleString()} Total Resigned`;
-        document.getElementById('kpi-avg-income').innerText = `$${Math.round(data.kpis.avg_income).toLocaleString()}`;
+        document.getElementById('kpi-avg-income').innerText = `₹${Math.round(data.kpis.avg_income).toLocaleString()}`;
         document.getElementById('kpi-avg-satisfaction').innerText = `${data.kpis.avg_satisfaction} / 4`;
         document.getElementById('kpi-avg-worklife').innerText = `${data.kpis.avg_work_life} / 4`;
 
         // Render Charts
-        renderHireYearChart(data.hire_years || []);
+        renderHireYearChart(data.years || data.hire_years || []);
         renderDeptAttritionChart(data.departments || []);
         renderDeptIncomeChart(data.departments || []);
         renderGenderAttritionChart(data.genders || []);
@@ -275,7 +275,7 @@ function renderHireYearChart(hireYears) {
             onClick: (evt, activeElements) => {
                 if (activeElements.length > 0) {
                     const idx = activeElements[0].index;
-                    setGlobalFilter('HireYear', labels[idx]);
+                    setGlobalFilter('Year', labels[idx]);
                 }
             }
         }
@@ -320,7 +320,7 @@ function renderDeptIncomeChart(departments) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Avg Monthly Income ($)',
+                label: 'Avg Monthly Income (₹)',
                 data: values,
                 backgroundColor: themeColors.blueAlpha,
                 borderColor: themeColors.blue,
@@ -328,7 +328,7 @@ function renderDeptIncomeChart(departments) {
                 borderRadius: 4
             }]
         },
-        options: getFilterableChartOptions('Department', 'Avg Monthly Income ($)', (label) => {
+        options: getFilterableChartOptions('Department', 'Avg Monthly Income (₹)', (label) => {
             setGlobalFilter('Department', label);
         })
     });
@@ -455,12 +455,12 @@ async function loadRetentionData() {
         const response = await fetch(`/api/retention?${params.toString()}`);
         const data = await response.json();
 
-        // Update Retention KPIs
+        // Update Retention KPIs (Display raw numbers only, no percentage strings)
         document.getElementById('ret-kpi-total').innerText = data.kpis.total_resigned.toLocaleString();
-        document.getElementById('ret-kpi-attempt-rate').innerText = `${data.kpis.attempt_rate}%`;
-        document.getElementById('ret-kpi-attempt-count').innerText = `${data.kpis.attempted_yes} Retention Attempts`;
-        document.getElementById('ret-kpi-success-rate').innerText = `${data.kpis.retention_success_rate}%`;
-        document.getElementById('ret-kpi-retained-count').innerText = `${data.kpis.retained_yes} Successfully Retained`;
+        document.getElementById('ret-kpi-attempt-rate').innerText = data.kpis.attempted_yes.toLocaleString();
+        document.getElementById('ret-kpi-attempt-count').innerText = "Retention Attempts Made";
+        document.getElementById('ret-kpi-success-rate').innerText = data.kpis.retained_yes.toLocaleString();
+        document.getElementById('ret-kpi-retained-count').innerText = "Employees Retained";
 
         renderReasonCategoriesChart(data.reason_categories || []);
         renderActionEffectivenessChart(data.action_effectiveness || []);
@@ -501,14 +501,14 @@ function renderActionEffectivenessChart(actions) {
     if (chartInstances['actionEffectiveness']) chartInstances['actionEffectiveness'].destroy();
 
     const labels = actions.map(a => a.action);
-    const values = actions.map(a => a.success_rate);
+    const values = actions.map(a => a.successful_retained || a.successful_retained === 0 ? a.successful_retained : a.success_rate);
 
     chartInstances['actionEffectiveness'] = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Retention Success Rate (%)',
+                label: 'Retained Employee Count',
                 data: values,
                 backgroundColor: themeColors.emeraldAlpha,
                 borderColor: themeColors.emerald,
@@ -516,37 +516,58 @@ function renderActionEffectivenessChart(actions) {
                 borderRadius: 4
             }]
         },
-        options: getFilterableChartOptions('Retention Action', 'Success Rate (%)', (label) => {
+        options: getFilterableChartOptions('Retention Action', 'Retained Count', (label) => {
             setGlobalFilter('Retention_Action_Taken', label);
         })
     });
 }
 
+function fillAndPredict(text) {
+    switchTab('prediction');
+    const inputEl = document.getElementById('feedbackText');
+    if (inputEl) {
+        inputEl.value = text;
+        const form = document.getElementById('predictionForm');
+        if (form) {
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+    }
+}
+
 function renderExitTable(exitRecords) {
     const tbody = document.getElementById('exit-table-body');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     exitRecords.forEach(rec => {
         const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border-color)';
 
         const attemptBadge = rec.retention_attempted === 'Yes' 
             ? `<span class="badge badge-yes">Yes</span>` 
             : `<span class="badge badge-no">No</span>`;
 
-        const retainedBadge = rec.retained === 'Yes' 
-            ? `<span class="badge badge-no">Retained</span>` 
-            : `<span class="badge badge-yes">Left</span>`;
+        const retainedBadge = rec.retained === 'Yes' || rec.retained === 'Not Applicable'
+            ? `<span class="badge badge-no" style="background:#dcfce7; color:#15803d;">Retained</span>` 
+            : `<span class="badge badge-yes" style="background:#fee2e2; color:#b91c1c;">Left</span>`;
+
+        const safeReason = (rec.hr_recorded_reason || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
         tr.innerHTML = `
-            <td><strong>${rec.employee_id}</strong></td>
-            <td>${rec.department}</td>
-            <td>${rec.job_role}</td>
-            <td>$${rec.monthly_income.toLocaleString()}</td>
-            <td><span class="badge badge-action">${rec.reason_category}</span></td>
-            <td style="max-width: 260px; font-size: 0.8rem; color: #475569;">${rec.hr_recorded_reason}</td>
-            <td>${attemptBadge}</td>
-            <td>${rec.action_taken || 'N/A'}</td>
-            <td>${retainedBadge}</td>
+            <td style="padding: 10px 12px;"><strong>#${rec.employee_id}</strong></td>
+            <td style="padding: 10px 12px;">${rec.department}</td>
+            <td style="padding: 10px 12px;">${rec.job_role}</td>
+            <td style="padding: 10px 12px;">₹${(rec.monthly_income || 0).toLocaleString()}</td>
+            <td style="padding: 10px 12px;"><span class="badge badge-action">${rec.reason_category || 'N/A'}</span></td>
+            <td style="padding: 10px 12px; max-width: 260px; font-size: 0.8rem; color: #475569;">${rec.hr_recorded_reason || 'N/A'}</td>
+            <td style="padding: 10px 12px;">${attemptBadge}</td>
+            <td style="padding: 10px 12px;"><strong>${rec.action_taken || 'N/A'}</strong></td>
+            <td style="padding: 10px 12px;">${retainedBadge}</td>
+            <td style="padding: 10px 12px;">
+                <button onclick="fillAndPredict('${safeReason}')" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; border: none; background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    Predict
+                </button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -566,7 +587,7 @@ async function initExplorerColumns() {
         const xOptions = [
             'Department', 'JobRole', 'Gender', 'MaritalStatus', 
             'EducationField', 'BusinessTravel', 'OverTime', 'Education',
-            'JobSatisfaction', 'WorkLifeBalance', 'EnvironmentSatisfaction', 'PerformanceRating', 'HireYear'
+            'JobSatisfaction', 'WorkLifeBalance', 'EnvironmentSatisfaction', 'PerformanceRating', 'Year', 'HireYear'
         ];
 
         xOptions.forEach(col => {

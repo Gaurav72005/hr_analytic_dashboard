@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js (Local for offline support) -->
+    <script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -107,9 +107,9 @@
                                 </select>
                             </div>
                             <div class="control-group">
-                                <label for="ov-filter-hireyear">Hire Year</label>
+                                <label for="ov-filter-hireyear">Year</label>
                                 <select id="ov-filter-hireyear" class="custom-select" onchange="onOverviewFilterChange()">
-                                    <option value="All" selected>All Hire Years</option>
+                                    <option value="All" selected>All Years</option>
                                 </select>
                             </div>
                         </div>
@@ -129,7 +129,7 @@
                         </div>
                         <div class="kpi-card success">
                             <span class="kpi-label">Avg Monthly Income</span>
-                            <span class="kpi-value" id="kpi-avg-income">$0</span>
+                            <span class="kpi-value" id="kpi-avg-income">₹0</span>
                             <span class="kpi-subtext">Across All Roles</span>
                         </div>
                         <div class="kpi-card">
@@ -144,12 +144,12 @@
                         </div>
                     </div>
 
-                    <!-- Hire Year Line Chart (New) -->
+                    <!-- Year Line Chart (New) -->
                     <div class="chart-card" style="margin-bottom: 20px;">
                         <div class="chart-header">
                             <div>
-                                <div class="chart-title">Hire Year vs Attrition Trend</div>
-                                <div class="chart-subtitle">Hire Year vs Attrition Trend</div>
+                                <div class="chart-title">Yearly Attrition Trend</div>
+                                <div class="chart-subtitle">Year vs Attrition Trend</div>
                             </div>
                             <span class="badge badge-action">Line Chart</span>
                         </div>
@@ -275,14 +275,14 @@
                             <span class="kpi-subtext">Recorded Exit Requests</span>
                         </div>
                         <div class="kpi-card accent">
-                            <span class="kpi-label">Retention Attempt Rate</span>
-                            <span class="kpi-value" id="ret-kpi-attempt-rate">0.0%</span>
-                            <span class="kpi-subtext" id="ret-kpi-attempt-count">0 Attempts Made</span>
+                            <span class="kpi-label">Retention Attempted</span>
+                            <span class="kpi-value" id="ret-kpi-attempt-rate">0</span>
+                            <span class="kpi-subtext" id="ret-kpi-attempt-count">Retention Attempts Made</span>
                         </div>
                         <div class="kpi-card success">
-                            <span class="kpi-label">Retention Success Rate</span>
-                            <span class="kpi-value" id="ret-kpi-success-rate">0.0%</span>
-                            <span class="kpi-subtext" id="ret-kpi-retained-count">0 Employees Retained</span>
+                            <span class="kpi-label">Retained Count</span>
+                            <span class="kpi-value" id="ret-kpi-success-rate">0</span>
+                            <span class="kpi-subtext" id="ret-kpi-retained-count">Employees Retained</span>
                         </div>
                     </div>
 
@@ -309,8 +309,9 @@
                             <div class="chart-container">
                                 <canvas id="chart-action-effectiveness"></canvas>
                             </div>
-                        </div>
                     </div>
+
+
                 </section>
 
 
@@ -428,18 +429,8 @@
                             <span class="kpi-label">Categories Count</span>
                             <span class="kpi-value" id="custom-stat-cat">0</span>
                         </div>
-                        <div class="kpi-card accent">
-                            <span class="kpi-label">Average Value</span>
-                            <span class="kpi-value" id="custom-stat-avg">0</span>
-                        </div>
-                        <div class="kpi-card success">
-                            <span class="kpi-label">Maximum Value</span>
-                            <span class="kpi-value" id="custom-stat-max">0</span>
-                        </div>
-                        <div class="kpi-card danger">
-                            <span class="kpi-label">Minimum Value</span>
-                            <span class="kpi-value" id="custom-stat-min">0</span>
-                        </div>
+
+
                     </div>
                 </section>
 
@@ -473,10 +464,6 @@
                                         <label for="feedbackText" style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px; display: block;">Employee Feedback / Exit Reason Text</label>
                                         <textarea id="feedbackText" rows="6" class="custom-select" style="width: 100%; height: 150px; padding: 14px; font-size: 0.9rem; border-radius: 10px; border: 1px solid var(--border-color); background: #f8fafc; color: var(--text-primary); resize: vertical; line-height: 1.5;" placeholder="e.g. Employee reported severe burnout due to long working hours and expressed interest in flexible remote work options..." required></textarea>
                                     </div>
-
-
-
-                                    <!-- Action Buttons -->
                                     <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px;">
                                         <button type="button" onclick="clearPredictionInput()" style="padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border-color); background: #f1f5f9; color: #475569; font-weight: 600; cursor: pointer; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
                                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
@@ -493,7 +480,7 @@
 
                         <!-- Right Column: Results & AI Recommendations Container -->
                         <div class="chart-card" style="padding: 24px; min-height: 380px; display: flex; flex-direction: column; justify-content: center;" id="predResultCard">
-                            <!-- Empty Initial State (Matches Screenshot 2 in Light Mode) -->
+                            <!-- Empty Initial State -->
                             <div id="predEmptyState" style="text-align: center; padding: 40px 20px;">
                                 <div style="width: 64px; height: 64px; border-radius: 50%; background: #f1f5f9; color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
                                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
@@ -508,7 +495,7 @@
                                 <p style="color: var(--text-primary); font-weight: 500; font-size: 0.9rem;">Analyzing NLP Text Features & Model Weights...</p>
                             </div>
 
-                            <!-- Prediction Results Content (Matches Screenshot 1 in Light Mode) -->
+                            <!-- Prediction Results Content -->
                             <div id="predResultsContent" style="display: none;">
                                 <!-- Top Box: Recommended Action -->
                                 <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;">
@@ -527,7 +514,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Bottom Strategy Card -->
+                                <!-- Strategy Card -->
                                 <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
                                     <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px;">
                                         <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(168, 85, 247, 0.12); color: #a855f7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -540,7 +527,6 @@
                                     </div>
                                     <p id="predStrategyBody" style="font-size: 0.86rem; color: var(--text-secondary); line-height: 1.5; margin: 0;">Initiate an internal transfer to a new reporting manager or department. Conduct confidential 1-on-1 feedback sessions to resolve team dynamic issues.</p>
                                 </div>
-
 
                             </div>
                         </div>

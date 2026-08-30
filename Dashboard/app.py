@@ -62,36 +62,42 @@ action_strategies = {
 # File path for dataset
 CSV_PATH = os.path.join(os.path.dirname(__file__), 'Hr_Retention.csv')
 
-def init_prediction_model(df):
+def init_prediction_model():
     global tfidf_vectorizer, trained_svm, class_labels
     if tfidf_vectorizer is not None:
         return
     try:
-        if 'Exit_Reason_HR_Recorded' in df.columns and 'Retention_Action_Taken' in df.columns:
-            data = df[df['Attrition'] == 'Yes'].dropna(subset=['Exit_Reason_HR_Recorded', 'Retention_Action_Taken'])
-            if not data.empty:
-                X = data['Exit_Reason_HR_Recorded']
-                y = data['Retention_Action_Taken']
-                class_labels = sorted(list(y.unique()))
-                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-                tfidf_vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
-                X_train_tfidf = tfidf_vectorizer.fit_transform(X_train)
-                trained_svm = SVC(kernel='linear', decision_function_shape='ovr', class_weight='balanced', probability=True, random_state=42)
-                trained_svm.fit(X_train_tfidf, y_train)
-                print("Prediction Model (TF-IDF + Linear SVC) successfully trained and ready!")
+        model_pkl_path = os.path.join(os.path.dirname(__file__), 'retention_action_model.pkl')
+        if os.path.exists(model_pkl_path):
+            import pickle
+            with open(model_pkl_path, 'rb') as f:
+                bundle = pickle.load(f)
+            if isinstance(bundle, dict):
+                tfidf_vectorizer = bundle.get('vectorizer')
+                trained_svm = bundle.get('model')
+                class_labels = bundle.get('classes', class_labels)
+                print("Dashboard Prediction Model loaded from pre-trained bundle!")
+        else:
+            print("Warning: retention_action_model.pkl not found. Run train_model.py to generate model file.")
     except Exception as e:
-        print("Prediction Model init warning:", str(e))
+        print("Prediction Model load error:", str(e))
 
 # Cache the DataFrame
 df_raw = None
 
 def load_data():
     global df_raw
-    if df_raw is None:
-        df_raw = pd.read_csv(CSV_PATH)
-        if 'HireYear' not in df_raw.columns and 'YearsAtCompany' in df_raw.columns:
-            df_raw['HireYear'] = 2024 - df_raw['YearsAtCompany']
-        init_prediction_model(df_raw)
+    df_raw = pd.read_csv(CSV_PATH)
+    if 'Gender' in df_raw.columns:
+        df_raw = df_raw[df_raw['Gender'].astype(str).str.strip().str.lower().isin(['male', 'female'])].copy()
+    if 'Year' not in df_raw.columns:
+        if 'HireDate' in df_raw.columns:
+            df_raw['Year'] = pd.to_datetime(df_raw['HireDate']).dt.year
+        elif 'HireYear' in df_raw.columns:
+            df_raw['Year'] = df_raw['HireYear']
+        elif 'YearsAtCompany' in df_raw.columns:
+            df_raw['Year'] = 2025 - df_raw['YearsAtCompany']
+    init_prediction_model()
     return df_raw
 
 def filter_dataframe(df):
@@ -102,7 +108,8 @@ def filter_dataframe(df):
         'gender': 'Gender',
         'overtime': 'OverTime',
         'role': 'JobRole',
-        'hire_year': 'HireYear',
+        'hire_year': 'Year',
+        'year': 'Year',
         'reason_cat': 'Reason_Category',
         'attempted': 'Retention_Attempted',
         'action_taken': 'Retention_Action_Taken',
@@ -136,12 +143,12 @@ def get_columns():
     df = load_data()
     
     options = {}
-    filter_cols = ['Department', 'JobRole', 'Gender', 'OverTime', 'HireYear', 'Reason_Category', 'Retention_Attempted', 'Retention_Action_Taken', 'Retained']
+    filter_cols = ['Department', 'JobRole', 'Gender', 'OverTime', 'Year', 'HireYear', 'Reason_Category', 'Retention_Attempted', 'Retention_Action_Taken', 'Retained']
     for col in filter_cols:
         if col in df.columns:
             unique_vals = [str(x) for x in df[col].dropna().unique() if str(x) != 'nan' and str(x) != 'NA']
-            if col == 'HireYear':
-                unique_vals = sorted([int(x) for x in unique_vals], reverse=True)
+            if col in ['Year', 'HireYear']:
+                unique_vals = sorted([int(float(x)) for x in unique_vals], reverse=True)
             else:
                 unique_vals = sorted(unique_vals)
             options[col] = unique_vals
@@ -222,15 +229,16 @@ def get_overview():
                 'attrition_rate': round((ot_attrition / ot_total) * 100, 1) if ot_total > 0 else 0
             })
 
-    # HireYear trend
+    # Year trend
     hireyear_stats = []
-    if 'HireYear' in df.columns:
-        for year, group in df.groupby('HireYear'):
+    year_col = 'Year' if 'Year' in df.columns else ('HireYear' if 'HireYear' in df.columns else None)
+    if year_col:
+        for year, group in df.groupby(year_col):
             tot = len(group)
             res = len(group[group['Attrition'] == 'Yes'])
             rate = round((res / tot) * 100, 1) if tot > 0 else 0
             hireyear_stats.append({
-                'year': int(year),
+                'year': int(float(year)),
                 'total_hires': tot,
                 'resigned': res,
                 'attrition_rate': rate
@@ -252,7 +260,8 @@ def get_overview():
         'genders': gender_stats,
         'roles': role_stats,
         'overtime': overtime_stats,
-        'hire_years': hireyear_stats
+        'hire_years': hireyear_stats,
+        'years': hireyear_stats
     })
 
 @app.route('/api/retention')
